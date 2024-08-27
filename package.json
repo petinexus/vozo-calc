@@ -9,8 +9,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d build"
+    "deploy": "gh-pages -d dist"
   },
+  "homepage": "https://petinexus.github.io/vozo-calc/",
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
