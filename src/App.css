@@ -1,0 +1,86 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Fontos a padding és border kezeléséhez */
+}
+
+body {
+  display: initial;
+}
+
+.container {
+  width: 100%; /* Kitöltjük az egész oldalt */
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+
+.meal-group {
+  width: 100%; /* Kitöltjük az egész oldalt */
+  padding: 20px;
+  margin-bottom: 30px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff;
+}
+
+.meal-group h2 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 24px;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.number-input {
+  flex: 1; /* Az input mező teljes szélességben nyúlik */
+  padding: 8px;
+  margin-right: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.delete-button {
+  padding: 8px 12px;
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  flex-shrink: 0; /* A gomb mérete ne változzon */
+}
+
+.delete-button:hover {
+  background-color: #e60000;
+}
+
+.add-button {
+  padding: 10px 15px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 15px;
+  width: 100%; /* A gomb is kitölti a teljes szélességet */
+}
+
+.add-button:hover {
+  background-color: #45a049;
+}
+
+.total-sum {
+  font-size: 20px;
+  color: #333;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 30px;
+  width: 100%; /* A szöveg is kihúzódik */
+}
