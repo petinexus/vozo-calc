@@ -3,7 +3,7 @@ import './App.css'
 
 interface MealGroup {
   name: string;
-  numbers: number[];
+  numbers: (number | '')[];
 }
 
 function App() {
@@ -23,7 +23,11 @@ function App() {
 
   useEffect(() => {
     const total = mealGroups.reduce(
-      (groupAcc, group) => groupAcc + group.numbers.reduce((acc, curr) => acc + curr, 0),
+      (groupAcc, group) => {
+        const groupSum = group.numbers?.reduce((acc, curr) => !isNaN(+curr) && !isNaN(+acc) ? (+acc) + (+curr) : acc, 0);
+        console.log(groupSum);
+        return !isNaN(+groupSum) && !isNaN(+groupAcc) ? (+groupSum) + (+groupAcc) : groupAcc;
+      },
       0
     );
     setTotalSum(total);
@@ -32,13 +36,13 @@ function App() {
 
   const handleNumberChange = (value: string, groupIndex: number, numberIndex: number) => {
     const updatedMealGroups = [...mealGroups];
-    updatedMealGroups[groupIndex].numbers[numberIndex] = parseFloat(value) || 0;
+    updatedMealGroups[groupIndex].numbers[numberIndex] = parseFloat(value) || '';
     setMealGroups(updatedMealGroups);
   };
 
   const addNumberField = (groupIndex: number) => {
     const updatedMealGroups = [...mealGroups];
-    updatedMealGroups[groupIndex].numbers.push(0);
+    updatedMealGroups[groupIndex].numbers.push('');
     setMealGroups(updatedMealGroups);
   };
 
