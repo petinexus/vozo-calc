@@ -8,6 +8,19 @@ body {
   display: inline;
 }
 
+.header {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  font-size: 25px;
+  margin-bottom: 20px;
+}
+
+.header button {
+  font-size: 30px;
+  margin: 0 10px;
+}
+
 .container {
   width: 100%;
   padding: 20px;

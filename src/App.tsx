@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import './App.css'
+import { useState, useEffect } from 'react';
+import './App.css';
 
 interface MealGroup {
   name: string;
@@ -7,15 +7,18 @@ interface MealGroup {
 }
 
 function App() {
+  const curDate = new Date().toISOString().split('T')[0]
+  const [currentDate, setCurrentDate] = useState<string>(curDate);
+
   const [mealGroups, setMealGroups] = useState<MealGroup[]>(() => {
-    const savedMealGroups = localStorage.getItem('mealGroups');
+    const savedMealGroups = localStorage.getItem(curDate);
     return savedMealGroups
       ? JSON.parse(savedMealGroups)
       : [
-        { name: 'Reggeli', numbers: [0] },
-        { name: 'Ebéd', numbers: [0] },
-        { name: 'Uzsonna', numbers: [0] },
-        { name: 'Vacsora', numbers: [0] },
+        { name: 'Reggeli', numbers: [''] },
+        { name: 'Ebéd', numbers: [''] },
+        { name: 'Uzsonna', numbers: [''] },
+        { name: 'Vacsora', numbers: [''] },
       ];
   });
 
@@ -24,14 +27,20 @@ function App() {
   useEffect(() => {
     const total = mealGroups.reduce(
       (groupAcc, group) => {
-        const groupSum = group.numbers?.reduce((acc, curr) => !isNaN(+curr) && !isNaN(+acc) ? (+acc) + (+curr) : acc, 0);
-        console.log(groupSum);
-        return !isNaN(+groupSum) && !isNaN(+groupAcc) ? (+groupSum) + (+groupAcc) : groupAcc;
+        const groupSum = group.numbers?.reduce(
+          (acc, curr) => (!isNaN(+curr) && !isNaN(+acc) ? +acc + +curr : acc),
+          0
+        );
+        return !isNaN(+groupSum) && !isNaN(+groupAcc) ? +groupSum + +groupAcc : groupAcc;
       },
       0
     );
     setTotalSum(total);
-    localStorage.setItem('mealGroups', JSON.stringify(mealGroups));
+  }, [mealGroups]);
+
+  useEffect(() => {
+    localStorage.setItem(currentDate, JSON.stringify(mealGroups));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mealGroups]);
 
   const handleNumberChange = (value: string, groupIndex: number, numberIndex: number) => {
@@ -54,9 +63,48 @@ function App() {
     setMealGroups(updatedMealGroups);
   };
 
+  const handlePreviousDay = () => {
+    const previousDay = new Date(currentDate);
+    previousDay.setDate(previousDay.getDate() - 1);
+    const prevDay = previousDay.toISOString().split('T')[0];
+    setCurrentDate(prevDay);
+
+    const savedMealGroups = localStorage.getItem(prevDay);
+    setMealGroups(savedMealGroups
+      ? JSON.parse(savedMealGroups)
+      : [
+        { name: 'Reggeli', numbers: [''] },
+        { name: 'Ebéd', numbers: [''] },
+        { name: 'Uzsonna', numbers: [''] },
+        { name: 'Vacsora', numbers: [''] },
+      ]);
+  };
+
+  const handleNextDay = () => {
+    const nextDay = new Date(currentDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const nexDay = nextDay.toISOString().split('T')[0];
+    setCurrentDate(nexDay);
+
+    const savedMealGroups = localStorage.getItem(nexDay);
+    setMealGroups(savedMealGroups
+      ? JSON.parse(savedMealGroups)
+      : [
+        { name: 'Reggeli', numbers: [''] },
+        { name: 'Ebéd', numbers: [''] },
+        { name: 'Uzsonna', numbers: [''] },
+        { name: 'Vacsora', numbers: [''] },
+      ]);
+  };
+
   return (
     <div className='root'>
       <div className="container">
+        <div className="header">
+          <button onClick={handlePreviousDay}>{'<'}</button>
+          <span>{currentDate}</span>
+          <button onClick={handleNextDay}>{'>'}</button>
+        </div>
         {mealGroups.map((group, groupIndex) => (
           <div key={group.name} className="meal-group">
             <h2>{group.name}</h2>
@@ -87,4 +135,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
