@@ -1,15 +1,111 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
+
+interface CalorieData {
+  calories: number;
+  label: string;
+}
+
+interface CalorieChartProps {
+  data: CalorieData[];
+  idealCalories: number;
+}
+
+const CalorieChart = ({ data, idealCalories }: CalorieChartProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 500, height: 300 });
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (canvasRef.current) {
+        const parentElement = canvasRef.current.parentElement;
+        if (parentElement) {
+          const newWidth = parentElement.clientWidth;
+          const newHeight = parentElement.clientHeight || 300;
+          setCanvasSize({ width: newWidth, height: newHeight });
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize();
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = canvasSize.width;
+    canvas.height = 200;
+    ctx.font = '16px Arial';
+
+    const chartWidth = canvas.width;
+    const chartHeight = canvas.height;
+    const padding = 40;
+    const barWidth = (chartWidth - padding * 2) / data.length;
+    const maxCalories = Math.max(...data.map(item => item.calories), idealCalories);
+
+    ctx.clearRect(0, 0, chartWidth, chartHeight);
+
+    const idealLineY = chartHeight - padding - (idealCalories / maxCalories) * (chartHeight - padding * 2);
+    ctx.beginPath();
+    ctx.moveTo(padding, idealLineY);
+    ctx.lineTo(chartWidth - padding, idealLineY);
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = 'red';
+    ctx.fillText(`${idealCalories}`, chartWidth - padding + 5, idealLineY + 4);
+
+    data.forEach((item, index) => {
+      const { calories, label } = item;
+      const barHeight = (calories / maxCalories) * (chartHeight - padding * 2);
+      const x = padding + index * barWidth;
+      const y = chartHeight - padding - barHeight;
+
+      ctx.fillStyle = 'rgba(75, 192, 192, 0.6)';
+      ctx.fillRect(x, y, barWidth - 10, barHeight);
+
+      ctx.fillStyle = '#000';
+      ctx.fillText(`${calories}`, x + (barWidth - 10) / 2 - ctx.measureText(`${calories}`).width / 2, y - 5);
+
+      ctx.fillText(label, x + (barWidth - 10) / 2 - ctx.measureText(label).width / 2, chartHeight - padding + 20);
+    });
+  }, [data, idealCalories, canvasSize]);
+
+  return <canvas ref={canvasRef} height={50} style={{ width: '100%' }}></canvas>;
+};
 
 interface MealGroup {
   name: string;
   numbers: (number | '')[];
 }
 
-function App() {
-  const curDate = new Date().toISOString().split('T')[0]
-  const [currentDate, setCurrentDate] = useState<string>(curDate);
+const sumMealGroups = (mealGroups: MealGroup[]) => mealGroups.reduce(
+  (groupAcc, group) => {
+    const groupSum = group.numbers?.reduce(
+      (acc, curr) => (!isNaN(+curr) && !isNaN(+acc) ? +acc + +curr : acc),
+      0
+    );
+    return !isNaN(+groupSum) && !isNaN(+groupAcc) ? +groupSum + +groupAcc : groupAcc;
+  },
+  0
+);
+;
 
+function App() {
+  const curDate = new Date().toISOString().split('T')[0];
+  const formatter = new Intl.DateTimeFormat('hu-HU', { weekday: 'short' });
+  const [currentDate, setCurrentDate] = useState<string>(curDate);
+  const [chartData, setChartData] = useState<CalorieData[]>([]);
+  const [totalSum, setTotalSum] = useState<number>(0);
+  const idealCaloriesStorage = localStorage.getItem('idealCalories');
+  const [idealCalories, setIdealCalories] = useState<number | string>(idealCaloriesStorage ? parseInt(idealCaloriesStorage, 10) : 2000);
   const [mealGroups, setMealGroups] = useState<MealGroup[]>(() => {
     const savedMealGroups = localStorage.getItem(curDate);
     return savedMealGroups
@@ -22,19 +118,8 @@ function App() {
       ];
   });
 
-  const [totalSum, setTotalSum] = useState<number>(0);
-
   useEffect(() => {
-    const total = mealGroups.reduce(
-      (groupAcc, group) => {
-        const groupSum = group.numbers?.reduce(
-          (acc, curr) => (!isNaN(+curr) && !isNaN(+acc) ? +acc + +curr : acc),
-          0
-        );
-        return !isNaN(+groupSum) && !isNaN(+groupAcc) ? +groupSum + +groupAcc : groupAcc;
-      },
-      0
-    );
+    const total = sumMealGroups(mealGroups);
     setTotalSum(total);
   }, [mealGroups]);
 
@@ -97,6 +182,25 @@ function App() {
       ]);
   };
 
+  useEffect(() => {
+    const curDate = new Date(currentDate);
+    const data: CalorieData[] = [{ calories: sumMealGroups(mealGroups), label: formatter.format(curDate) }];
+
+    for (let i = 1; i < 7; i++) {
+      const prevDate = new Date(currentDate);
+      prevDate.setDate(curDate.getDate() - i)
+      const prevMealGroups = localStorage.getItem(prevDate.toISOString().split('T')[0]);
+      const curMealGroups = prevMealGroups
+        ? JSON.parse(prevMealGroups) : undefined;
+
+      data.push({ calories: curMealGroups ? sumMealGroups(curMealGroups) : 0, label: formatter.format(prevDate) })
+    }
+
+    setChartData(data.reverse());
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentDate, mealGroups]);
+
   return (
     <div className='root'>
       <div className="container">
@@ -129,7 +233,20 @@ function App() {
             </button>
           </div>
         ))}
-        <p className="total-sum">Összesített összeg: {totalSum}</p>
+        <p className="total-sum">Összesített összeg: {totalSum}kcal</p>
+        <p className="total-sum">Utolsó 7 nap átlaga: {Math.ceil(chartData.reduce((acc, cur) => acc + cur.calories, 0) / 7)}kcal</p>
+        <CalorieChart data={
+          chartData
+        }
+          idealCalories={typeof idealCalories === 'number' ? idealCalories : 0}
+        />
+        <input
+          type="number"
+          value={idealCalories}
+          onChange={(e) => setIdealCalories(parseFloat(e.target.value) || '')}
+          className="number-input"
+          style={{ width: '100%' }}
+        />
       </div>
     </div>
   );
