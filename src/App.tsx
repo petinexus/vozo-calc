@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, ReactNode } from 'react';
 import './App.css';
 
 interface CalorieData {
@@ -10,6 +10,34 @@ interface CalorieChartProps {
   data: CalorieData[];
   idealCalories: number;
 }
+
+function FullScreenDrawer({ open, onClose, children }: { open: boolean, onClose: () => void, children: ReactNode }) {
+
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [open]);
+
+
+  return (
+    <div>
+      <div className={`drawer ${open ? 'open' : ''}`}>
+        <button style={{ margin: '10px' }} onClick={onClose}>Bezárás</button>
+        <div className="drawer-content">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 const CalorieChart = ({ data, idealCalories }: CalorieChartProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -201,8 +229,56 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate, mealGroups]);
 
+  const [swipeDirection, setSwipeDirection] = useState(false);
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchStartX = e.changedTouches[0].screenX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    touchEndX = e.changedTouches[0].screenX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX - touchEndX > 150) {
+      setSwipeDirection(true);
+    }
+
+    if (touchEndX - touchStartX > 150) {
+      setSwipeDirection(true);
+    }
+  };
+
+  const handleClose = () => {
+    setSwipeDirection(false);
+  }
+
+  const handleChangeIdealCalories = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIdealCalories(parseFloat(e.target.value) || '')
+    localStorage.setItem('idealCalories', e.target.value)
+  }
+
   return (
-    <div className='root'>
+    <div className='root'
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      <p>{swipeDirection}</p>
+      <FullScreenDrawer onClose={handleClose} open={swipeDirection}>
+        <>
+          <p>Ideális kalória</p>
+          <input
+            type="number"
+            value={idealCalories}
+            onChange={handleChangeIdealCalories}
+            className="number-input"
+            style={{ width: '100%' }}
+          />
+        </>
+      </FullScreenDrawer>
       <div className="container">
         <div className="header">
           <button onClick={handlePreviousDay}>{'<'}</button>
@@ -239,13 +315,6 @@ function App() {
           chartData
         }
           idealCalories={typeof idealCalories === 'number' ? idealCalories : 0}
-        />
-        <input
-          type="number"
-          value={idealCalories}
-          onChange={(e) => setIdealCalories(parseFloat(e.target.value) || '')}
-          className="number-input"
-          style={{ width: '100%' }}
         />
       </div>
     </div>
